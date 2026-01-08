@@ -24,7 +24,7 @@ namespace WpfAppGui
     public partial class MainWindow : Window
     {
         private const string ConfigFileName = "Config.txt";
-        private const string CsvFileName = "Result.csv";
+        private const string CsvFileName = "graylevelsrgbw.csv";
         private List<int> _stepGrayValues;
         private Thread _workerThread;
         private volatile bool _isStopRequested;
@@ -232,7 +232,7 @@ namespace WpfAppGui
 
         private void CmbSteps_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            GenerateStepValues();
+            // The logic has been moved to the Execute_Click event
         }
 
         private void Execute_Click(object sender, RoutedEventArgs e)
