@@ -40,15 +40,16 @@ namespace WpfAppGui
 
         private void LoadSettingsFromFile()
         {
-            if (!File.Exists(ConfigFileName))
+            string configFilePath = FindConfigFilePath();
+            if (string.IsNullOrEmpty(configFilePath))
             {
-                // 如果設定檔不存在，則保留 UI 上的預設值
+                // 如果找不到設定檔，則保留 UI 上的預設值
                 return;
             }
 
             try
             {
-                var settings = File.ReadAllLines(ConfigFileName)
+                var settings = File.ReadAllLines(configFilePath)
                     .Where(line => !string.IsNullOrWhiteSpace(line) && line.Contains(":"))
                     .Select(line => line.Split(new[] { ':' }, 2))
                     .ToDictionary(parts => parts[0].Trim(), parts => parts[1].Trim(), StringComparer.OrdinalIgnoreCase);
@@ -120,6 +121,34 @@ namespace WpfAppGui
                 // 如果讀取或解析檔案時發生錯誤，顯示錯誤訊息但繼續執行
                 MessageBox.Show($"讀取設定檔時發生錯誤: {ex.Message}", "錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>
+        /// 從執行目錄開始向上層尋找設定檔。
+        /// </summary>
+        /// <returns>如果找到檔案，則傳回完整路徑；否則傳回 null。</returns>
+        private string FindConfigFilePath()
+        {
+            string currentDir = AppDomain.CurrentDomain.BaseDirectory;
+            int maxLevels = 5; // 設定向上搜尋的最大層數，以避免無限循環
+
+            for (int i = 0; i < maxLevels; i++)
+            {
+                string filePath = System.IO.Path.Combine(currentDir, ConfigFileName);
+                if (File.Exists(filePath))
+                {
+                    return filePath;
+                }
+
+                DirectoryInfo parentDir = Directory.GetParent(currentDir);
+                if (parentDir == null)
+                {
+                    break;
+                }
+                currentDir = parentDir.FullName;
+            }
+
+            return null;
         }
 
         /// <summary>
