@@ -23,12 +23,14 @@ namespace WpfAppGui
     public partial class MainWindow : Window
     {
         private const string ConfigFileName = "Config.txt";
+        private List<int> _stepValues;
 
         public MainWindow()
         {
             InitializeComponent();
             LoadSerialPorts();
             LoadSettingsFromFile();
+            GenerateStepValues();
         }
 
         private void LoadSerialPorts()
@@ -189,6 +191,48 @@ namespace WpfAppGui
             // 基本功能預設值
             SetComboBoxValue(CmbSteps, "64");
             TxtIntervalTime.Text = "200";
+        }
+
+        /// <summary>
+        /// 根據選擇的階數產生對應的數值陣列。
+        /// </summary>
+        private void GenerateStepValues()
+        {
+            if (CmbSteps.SelectedItem == null || !(CmbSteps.SelectedItem is ComboBoxItem selectedItem))
+            {
+                _stepValues = new List<int>();
+                return;
+            }
+
+            if (int.TryParse(selectedItem.Content.ToString(), out int steps) && steps > 0)
+            {
+                _stepValues = new List<int>(steps);
+                if (steps == 1)
+                {
+                    _stepValues.Add(255);
+                    return;
+                }
+
+                // 計算增量，使用浮點數以獲得更精確的間隔
+                double increment = 255.0 / (steps - 1);
+
+                for (int i = 0; i < steps; i++)
+                {
+                    int value = (int)Math.Round(i * increment);
+                    _stepValues.Add(value > 255 ? 255 : value);
+                }
+
+                // 確保最後一個值絕對是 255
+                if (_stepValues.Last() != 255)
+                {
+                    _stepValues[_stepValues.Count - 1] = 255;
+                }
+            }
+        }
+
+        private void CmbSteps_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            GenerateStepValues();
         }
     }
 }
