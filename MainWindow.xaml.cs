@@ -237,6 +237,7 @@ namespace WpfAppGui
 
         private void Execute_Click(object sender, RoutedEventArgs e)
         {
+            TxtTestData.Clear(); // 清除先前的測試數據
             GenerateStepValues(); // 在執行前，根據當前UI設定產生數值
 
             BtnExecute.IsEnabled = false;
@@ -298,6 +299,13 @@ namespace WpfAppGui
                     // 以下為模擬數據
                     getBrightness[i] = new Random().NextDouble() * 200;
 
+                    // 將目前結果顯示在 UI 上
+                    Dispatcher.Invoke(() =>
+                    {
+                        TxtTestData.AppendText($"Gray: {_stepGrayValues[i]}, Brightness: {getBrightness[i]:F3}\n");
+                        TxtTestData.ScrollToEnd();
+                    });
+
                     // c. delay IntervalTime
                     Thread.Sleep(interval);
                 }
@@ -324,13 +332,103 @@ namespace WpfAppGui
 
         private bool ConnectToColorimeter()
         {
-            // (此處應加入實際的色度計連線程式碼)
+            try
+            {
+                string portName = "";
+                int baudRate = 115200;
+                int dataBits = 8;
+                Parity parity = Parity.None;
+                StopBits stopBits = StopBits.One;
+
+                // 從 UI 執行緒安全地讀取設定
+                Dispatcher.Invoke(() =>
+                {
+                    portName = CmbColorimeterPort.SelectedItem as string;
+                    baudRate = int.Parse((CmbColorimeterBaudRate.SelectedItem as ComboBoxItem).Content as string);
+                    dataBits = int.Parse((CmbColorimeterDataBits.SelectedItem as ComboBoxItem).Content as string);
+                    parity = (Parity)Enum.Parse(typeof(Parity), (CmbColorimeterParity.SelectedItem as ComboBoxItem).Content as string, true);
+                    stopBits = (StopBits)Enum.Parse(typeof(StopBits), (CmbColorimeterStopBits.SelectedItem as ComboBoxItem).Content as string, true);
+                });
+
+                if (string.IsNullOrEmpty(portName))
+                {
+                    ShowMessageBoxOnUi("色度計通訊埠未選擇。", "錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return false;
+                }
+
+                SerialPort colorimeterPort = new SerialPort
+                {
+                    PortName = portName,
+                    BaudRate = baudRate,
+                    DataBits = dataBits,
+                    Parity = parity,
+                    StopBits = stopBits,
+                    ReadTimeout = 500,
+                    WriteTimeout = 500
+                };
+
+                // colorimeterPort.Open();
+                // (此處應加入驗證連線是否成功的程式碼)
+
+                // colorimeterPort.Close(); // 如果只是為了測試連線，可以立刻關閉
+            }
+            catch (Exception ex)
+            {
+                ShowMessageBoxOnUi($"連接色度計時發生錯誤: {ex.Message}", "連線錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
             return true; // 佔位符
         }
 
         private bool ConnectToDut()
         {
-            // (此處應加入實際的 DUT 連線程式碼)
+            try
+            {
+                string portName = "";
+                int baudRate = 115200;
+                int dataBits = 8;
+                Parity parity = Parity.None;
+                StopBits stopBits = StopBits.One;
+
+                // 從 UI 執行緒安全地讀取設定
+                Dispatcher.Invoke(() =>
+                {
+                    portName = CmbDutPort.SelectedItem as string;
+                    baudRate = int.Parse((CmbDutBaudRate.SelectedItem as ComboBoxItem).Content as string);
+                    dataBits = int.Parse((CmbDutDataBits.SelectedItem as ComboBoxItem).Content as string);
+                    parity = (Parity)Enum.Parse(typeof(Parity), (CmbDutParity.SelectedItem as ComboBoxItem).Content as string, true);
+                    stopBits = (StopBits)Enum.Parse(typeof(StopBits), (CmbDutStopBits.SelectedItem as ComboBoxItem).Content as string, true);
+                });
+
+                if (string.IsNullOrEmpty(portName))
+                {
+                    ShowMessageBoxOnUi("DUT 通訊埠未選擇。", "錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return false;
+                }
+
+                SerialPort dutPort = new SerialPort
+                {
+                    PortName = portName,
+                    BaudRate = baudRate,
+                    DataBits = dataBits,
+                    Parity = parity,
+                    StopBits = stopBits,
+                    ReadTimeout = 500,
+                    WriteTimeout = 500
+                };
+
+                // dutPort.Open();
+                // (此處應加入驗證連線是否成功的程式碼)
+
+                // dutPort.Close(); // 如果只是為了測試連線，可以立刻關閉
+            }
+            catch (Exception ex)
+            {
+                ShowMessageBoxOnUi($"連接 DUT 時發生錯誤: {ex.Message}", "連線錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
             return true; // 佔位符
         }
 

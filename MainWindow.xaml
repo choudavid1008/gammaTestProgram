@@ -148,7 +148,7 @@
 
                 <!-- 顯示測試數據 -->
                 <TextBlock Text="測試數據：" Grid.Row="2" Grid.Column="0" Margin="5,10,5,5" VerticalAlignment="Top" />
-                <TextBox Grid.Row="2" Grid.Column="1" Margin="5" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" />
+                <TextBox x:Name="TxtTestData" Grid.Row="2" Grid.Column="1" Margin="5" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" />
 
                 <!-- 執行與停止按鈕 -->
                 <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
