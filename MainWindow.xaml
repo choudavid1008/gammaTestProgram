@@ -152,8 +152,8 @@
 
                 <!-- 執行與停止按鈕 -->
                 <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
-                    <Button Content="執行" Width="100" Margin="5" />
-                    <Button Content="停止" Width="100" Margin="5" />
+                    <Button x:Name="BtnExecute" Content="執行" Width="100" Margin="5" Click="Execute_Click" />
+                    <Button x:Name="BtnStop" Content="停止" Width="100" Margin="5" Click="Stop_Click" IsEnabled="False" />
                 </StackPanel>
             </Grid>
         </GroupBox>

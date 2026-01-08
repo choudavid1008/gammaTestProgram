@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,13 +25,15 @@ namespace WpfAppGui
     {
         private const string ConfigFileName = "Config.txt";
         private List<int> _stepGrayValues;
+        private Thread _workerThread;
+        private volatile bool _isStopRequested;
 
         public MainWindow()
         {
             InitializeComponent();
             LoadSerialPorts();
             LoadSettingsFromFile();
-            //GenerateStepValues();
+            GenerateStepValues();
         }
 
         private void LoadSerialPorts()
@@ -206,7 +209,6 @@ namespace WpfAppGui
 
             if (int.TryParse(selectedItem.Content.ToString(), out int steps) && steps > 0)
             {
-
                 _stepGrayValues = new List<int>(steps + 1);
                 int increment = 256 / steps;
                 int currentValue = 0;
@@ -231,6 +233,136 @@ namespace WpfAppGui
         private void CmbSteps_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             GenerateStepValues();
+        }
+
+        private void Execute_Click(object sender, RoutedEventArgs e)
+        {
+            BtnExecute.IsEnabled = false;
+            BtnStop.IsEnabled = true;
+            _isStopRequested = false;
+
+            _workerThread = new Thread(MeasurementLoop);
+            _workerThread.Start();
+        }
+
+        private void Stop_Click(object sender, RoutedEventArgs e)
+        {
+            if (_workerThread != null && _workerThread.IsAlive)
+            {
+                _isStopRequested = true;
+                BtnStop.IsEnabled = false; // 防止重複點擊
+            }
+        }
+
+        private void MeasurementLoop()
+        {
+            try
+            {
+                // 1. 確認連線
+                if (!ConnectToColorimeter() || !ConnectToDut())
+                {
+                    ShowMessageBoxOnUi("無法連線到 COM Port，請檢查設定。", "連線失敗", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // 2. 準備資料陣列
+                double[] getBrightness = new double[_stepGrayValues.Count];
+
+                // 在迴圈外解析延遲時間
+                int interval = 200; // 預設值
+                Dispatcher.Invoke(() =>
+                {
+                    if (int.TryParse(TxtIntervalTime.Text, out int parsedInterval))
+                    {
+                        interval = parsedInterval;
+                    }
+                });
+
+                // 3. 執行主迴圈
+                for (int i = 0; i < _stepGrayValues.Count; i++)
+                {
+                    // 檢查是否被要求停止
+                    if (_isStopRequested)
+                    {
+                        ShowMessageBoxOnUi("操作已被使用者停止。", "已停止", MessageBoxButton.OK, MessageBoxImage.Information);
+                        return; // 提前退出
+                    }
+
+                    // a. 跟DUT 發送 stepGrayValues[i]
+                    // (此處應加入實際的 DUT 通訊程式碼)
+
+                    // b. 從色度計取得 Brightness
+                    // (此處應加入實際的色度計通訊程式碼)
+                    // 以下為模擬數據
+                    getBrightness[i] = new Random().NextDouble() * 200;
+
+                    // c. delay IntervalTime
+                    Thread.Sleep(interval);
+                }
+
+                // 4. 儲存結果 (如果沒有被停止)
+                SaveResultsToCsv(getBrightness);
+                ShowMessageBoxOnUi("測量完成並已儲存結果。", "完成", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            }
+            catch (Exception ex)
+            {
+                ShowMessageBoxOnUi($"執行時發生未預期的錯誤: {ex.Message}", "錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                // 無論如何，都要在 UI 執行緒上還原按鈕狀態
+                Dispatcher.Invoke(() =>
+                {
+                    BtnExecute.IsEnabled = true;
+                    BtnStop.IsEnabled = false;
+                });
+            }
+        }
+
+        private bool ConnectToColorimeter()
+        {
+            // (此處應加入實際的色度計連線程式碼)
+            return true; // 佔位符
+        }
+
+        private bool ConnectToDut()
+        {
+            // (此處應加入實際的 DUT 連線程式碼)
+            return true; // 佔位符
+        }
+
+        private void SaveResultsToCsv(double[] brightnessValues)
+        {
+            try
+            {
+                StringBuilder csvContent = new StringBuilder();
+                csvContent.AppendLine("Gray,Brightness");
+
+                for (int i = 0; i < _stepGrayValues.Count; i++)
+                {
+                    // 確保 brightnessValues 的索引不會超出範圍
+                    if (i < brightnessValues.Length)
+                    {
+                        csvContent.AppendLine($"{_stepGrayValues[i]},{brightnessValues[i]:F3}");
+                    }
+                }
+
+                string fileName = $"Result_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                File.WriteAllText(fileName, csvContent.ToString());
+            }
+            catch (Exception ex)
+            {
+                ShowMessageBoxOnUi($"儲存 CSV 檔案時發生錯誤: {ex.Message}", "存檔失敗", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ShowMessageBoxOnUi(string message, string caption, MessageBoxButton button, MessageBoxImage icon)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                MessageBox.Show(this, message, caption, button, icon);
+            });
         }
     }
 }
