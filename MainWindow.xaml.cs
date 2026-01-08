@@ -332,6 +332,7 @@ namespace WpfAppGui
 
         private bool ConnectToColorimeter()
         {
+            /*
             try
             {
                 string portName = "";
@@ -377,12 +378,13 @@ namespace WpfAppGui
                 ShowMessageBoxOnUi($"連接色度計時發生錯誤: {ex.Message}", "連線錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
-
+            */
             return true; // 佔位符
         }
 
         private bool ConnectToDut()
         {
+            /*
             try
             {
                 string portName = "";
@@ -428,7 +430,7 @@ namespace WpfAppGui
                 ShowMessageBoxOnUi($"連接 DUT 時發生錯誤: {ex.Message}", "連線錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
-
+            */
             return true; // 佔位符
         }
 
