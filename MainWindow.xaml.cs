@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
@@ -21,10 +22,13 @@ namespace WpfAppGui
     /// </summary>
     public partial class MainWindow : Window
     {
+        private const string ConfigFileName = "Config.txt";
+
         public MainWindow()
         {
             InitializeComponent();
             LoadSerialPorts();
+            LoadSettingsFromFile();
         }
 
         private void LoadSerialPorts()
@@ -32,6 +36,107 @@ namespace WpfAppGui
             string[] portNames = SerialPort.GetPortNames();
             CmbColorimeterPort.ItemsSource = portNames;
             CmbDutPort.ItemsSource = portNames;
+        }
+
+        private void LoadSettingsFromFile()
+        {
+            if (!File.Exists(ConfigFileName))
+            {
+                // 如果設定檔不存在，則保留 UI 上的預設值
+                return;
+            }
+
+            try
+            {
+                var settings = File.ReadAllLines(ConfigFileName)
+                    .Where(line => !string.IsNullOrWhiteSpace(line) && line.Contains(":"))
+                    .Select(line => line.Split(new[] { ':' }, 2))
+                    .ToDictionary(parts => parts[0].Trim(), parts => parts[1].Trim(), StringComparer.OrdinalIgnoreCase);
+
+                // 更新色度計設定
+                if (settings.TryGetValue("ColorimeterPort", out string colorimeterPort))
+                {
+                    // 驗證 COM port 是否存在於系統列表中
+                    if (CmbColorimeterPort.ItemsSource is string[] availablePorts && availablePorts.Contains(colorimeterPort))
+                    {
+                        CmbColorimeterPort.SelectedItem = colorimeterPort;
+                    }
+                }
+                if (settings.TryGetValue("ColorimeterBaudRate", out string colorimeterBaudRate))
+                {
+                    SetComboBoxValue(CmbColorimeterBaudRate, colorimeterBaudRate);
+                }
+                if (settings.TryGetValue("ColorimeterDataBits", out string colorimeterDataBits))
+                {
+                    SetComboBoxValue(CmbColorimeterDataBits, colorimeterDataBits);
+                }
+                if (settings.TryGetValue("ColorimeterParity", out string colorimeterParity))
+                {
+                    SetComboBoxValue(CmbColorimeterParity, colorimeterParity);
+                }
+                if (settings.TryGetValue("ColorimeterStopBits", out string colorimeterStopBits))
+                {
+                    SetComboBoxValue(CmbColorimeterStopBits, colorimeterStopBits);
+                }
+
+                // 更新 DUT 設定
+                if (settings.TryGetValue("DutPort", out string dutPort))
+                {
+                    // 驗證 COM port 是否存在於系統列表中
+                    if (CmbDutPort.ItemsSource is string[] availablePorts && availablePorts.Contains(dutPort))
+                    {
+                        CmbDutPort.SelectedItem = dutPort;
+                    }
+                }
+                if (settings.TryGetValue("DutBaudRate", out string dutBaudRate))
+                {
+                    SetComboBoxValue(CmbDutBaudRate, dutBaudRate);
+                }
+                if (settings.TryGetValue("DutDataBits", out string dutDataBits))
+                {
+                    SetComboBoxValue(CmbDutDataBits, dutDataBits);
+                }
+                if (settings.TryGetValue("DutParity", out string dutParity))
+                {
+                    SetComboBoxValue(CmbDutParity, dutParity);
+                }
+                if (settings.TryGetValue("DutStopBits", out string dutStopBits))
+                {
+                    SetComboBoxValue(CmbDutStopBits, dutStopBits);
+                }
+
+                // 更新基本功能設定
+                if (settings.TryGetValue("Steps", out string steps))
+                {
+                    SetComboBoxValue(CmbSteps, steps);
+                }
+                if (settings.TryGetValue("IntervalTime", out string intervalTime))
+                {
+                    TxtIntervalTime.Text = intervalTime;
+                }
+            }
+            catch (Exception ex)
+            {
+                // 如果讀取或解析檔案時發生錯誤，顯示錯誤訊息但繼續執行
+                MessageBox.Show($"讀取設定檔時發生錯誤: {ex.Message}", "錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 安全地設定 ComboBox 的選定值。
+        /// </summary>
+        /// <param name="comboBox">要設定的 ComboBox。</param>
+        /// <param name="value">要選定的值。</param>
+        private void SetComboBoxValue(ComboBox comboBox, string value)
+        {
+            foreach (var item in comboBox.Items)
+            {
+                if (item is ComboBoxItem comboBoxItem && comboBoxItem.Content.ToString().Equals(value, StringComparison.OrdinalIgnoreCase))
+                {
+                    comboBox.SelectedItem = item;
+                    return;
+                }
+            }
         }
     }
 }

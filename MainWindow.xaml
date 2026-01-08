@@ -35,7 +35,7 @@
                 <ComboBox x:Name="CmbColorimeterPort" Grid.Row="0" Grid.Column="1" Margin="5" />
 
                 <Label Content="傳輸速率：" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="1" Grid.Column="1" Margin="5">
+                <ComboBox x:Name="CmbColorimeterBaudRate" Grid.Row="1" Grid.Column="1" Margin="5">
                     <ComboBoxItem Content="9600" />
                     <ComboBoxItem Content="19200" />
                     <ComboBoxItem Content="38400" />
@@ -44,7 +44,7 @@
                 </ComboBox>
 
                 <Label Content="資料位元：" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="2" Grid.Column="1" Margin="5">
+                <ComboBox x:Name="CmbColorimeterDataBits" Grid.Row="2" Grid.Column="1" Margin="5">
                     <ComboBoxItem Content="5" />
                     <ComboBoxItem Content="6" />
                     <ComboBoxItem Content="7" />
@@ -52,14 +52,14 @@
                 </ComboBox>
 
                 <Label Content="檢查位元：" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="3" Grid.Column="1" Margin="5">
+                <ComboBox x:Name="CmbColorimeterParity" Grid.Row="3" Grid.Column="1" Margin="5">
                     <ComboBoxItem Content="None" />
                     <ComboBoxItem Content="Even" />
                     <ComboBoxItem Content="Odd" />
                 </ComboBox>
 
                 <Label Content="停止位元：" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="4" Grid.Column="1" Margin="5">
+                <ComboBox x:Name="CmbColorimeterStopBits" Grid.Row="4" Grid.Column="1" Margin="5">
                     <ComboBoxItem Content="0" />
                     <ComboBoxItem Content="1" />
                     <ComboBoxItem Content="2" />
@@ -86,7 +86,7 @@
                 <ComboBox x:Name="CmbDutPort" Grid.Row="0" Grid.Column="1" Margin="5" />
 
                 <Label Content="傳輸速率：" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="1" Grid.Column="1" Margin="5">
+                <ComboBox x:Name="CmbDutBaudRate" Grid.Row="1" Grid.Column="1" Margin="5">
                     <ComboBoxItem Content="9600" />
                     <ComboBoxItem Content="19200" />
                     <ComboBoxItem Content="38400" />
@@ -95,7 +95,7 @@
                 </ComboBox>
 
                 <Label Content="資料位元：" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="2" Grid.Column="1" Margin="5">
+                <ComboBox x:Name="CmbDutDataBits" Grid.Row="2" Grid.Column="1" Margin="5">
                     <ComboBoxItem Content="5" />
                     <ComboBoxItem Content="6" />
                     <ComboBoxItem Content="7" />
@@ -103,14 +103,14 @@
                 </ComboBox>
 
                 <Label Content="檢查位元：" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="3" Grid.Column="1" Margin="5">
+                <ComboBox x:Name="CmbDutParity" Grid.Row="3" Grid.Column="1" Margin="5">
                     <ComboBoxItem Content="None" />
                     <ComboBoxItem Content="Even" />
                     <ComboBoxItem Content="Odd" />
                 </ComboBox>
 
                 <Label Content="停止位元：" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="4" Grid.Column="1" Margin="5">
+                <ComboBox x:Name="CmbDutStopBits" Grid.Row="4" Grid.Column="1" Margin="5">
                     <ComboBoxItem Content="0" />
                     <ComboBoxItem Content="1" />
                     <ComboBoxItem Content="2" />
@@ -134,7 +134,7 @@
 
                 <!-- 設定階數 -->
                 <Label Content="設定幾階：" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="0" Grid.Column="1" Margin="5" SelectedIndex="4">
+                <ComboBox x:Name="CmbSteps" Grid.Row="0" Grid.Column="1" Margin="5" SelectedIndex="4">
                     <ComboBoxItem Content="4" />
                     <ComboBoxItem Content="8" />
                     <ComboBoxItem Content="16" />
@@ -144,7 +144,7 @@
 
                 <!-- 間隔時間 -->
                 <Label Content="間隔時間 (ms)：" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" />
-                <TextBox Grid.Row="1" Grid.Column="1" Margin="5" />
+                <TextBox x:Name="TxtIntervalTime" Grid.Row="1" Grid.Column="1" Margin="5" />
 
                 <!-- 顯示測試數據 -->
                 <TextBlock Text="測試數據：" Grid.Row="2" Grid.Column="0" Margin="5,10,5,5" VerticalAlignment="Top" />
