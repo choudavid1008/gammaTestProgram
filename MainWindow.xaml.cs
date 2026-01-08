@@ -43,7 +43,8 @@ namespace WpfAppGui
             string configFilePath = FindConfigFilePath();
             if (string.IsNullOrEmpty(configFilePath))
             {
-                // 如果找不到設定檔，則保留 UI 上的預設值
+                // 如果找不到設定檔，則載入程式中定義的預設值
+                ApplyDefaultSettings();
                 return;
             }
 
@@ -166,6 +167,28 @@ namespace WpfAppGui
                     return;
                 }
             }
+        }
+
+        /// <summary>
+        /// 將 UI 控制項設定為程式中定義的預設值。
+        /// </summary>
+        private void ApplyDefaultSettings()
+        {
+            // 色度計預設值
+            SetComboBoxValue(CmbColorimeterBaudRate, "115200");
+            SetComboBoxValue(CmbColorimeterDataBits, "8");
+            SetComboBoxValue(CmbColorimeterParity, "None");
+            SetComboBoxValue(CmbColorimeterStopBits, "1");
+
+            // DUT 預設值
+            SetComboBoxValue(CmbDutBaudRate, "115200");
+            SetComboBoxValue(CmbDutDataBits, "8");
+            SetComboBoxValue(CmbDutParity, "None");
+            SetComboBoxValue(CmbDutStopBits, "1");
+
+            // 基本功能預設值
+            SetComboBoxValue(CmbSteps, "64");
+            TxtIntervalTime.Text = "200";
         }
     }
 }
