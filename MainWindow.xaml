@@ -9,12 +9,15 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
         <!-- 區塊 1: 色度計 Comport 設定 -->
-        <GroupBox Header="色度計 PCM2-100 Comport 設定" Grid.Row="0" Margin="10" Padding="5">
+        <GroupBox Header="色度計 PCM2-100 Comport 設定" Grid.Row="0" Grid.Column="0" Margin="10" Padding="5">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -65,7 +68,7 @@
         </GroupBox>
 
         <!-- 區塊 2: DUT Comport 設定 -->
-        <GroupBox Header="DUT Comport 設定" Grid.Row="1" Margin="10" Padding="5">
+        <GroupBox Header="DUT Comport 設定" Grid.Row="0" Grid.Column="1" Margin="10" Padding="5">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -116,7 +119,7 @@
         </GroupBox>
 
         <!-- 區塊 3: 基本功能 -->
-        <GroupBox Header="基本功能" Grid.Row="2" Margin="10" Padding="5">
+        <GroupBox Header="基本功能" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="10" Padding="5">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
