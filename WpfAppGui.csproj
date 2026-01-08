@@ -6,4 +6,11 @@
     <RootNamespace>WpfAppGui</RootNamespace>
     <AssemblyName>WpfAppGui</AssemblyName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="Config.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
