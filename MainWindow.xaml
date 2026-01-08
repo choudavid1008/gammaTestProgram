@@ -15,18 +15,104 @@
 
         <!-- 區塊 1: 色度計 Comport 設定 -->
         <GroupBox Header="色度計 PCM2-100 Comport 設定" Grid.Row="0" Margin="10" Padding="5">
-            <StackPanel>
-                <TextBlock Text="此處放置色度計 Comport 相關的設定控制項..." />
-                <!-- 範例: <ComboBox Margin="5"/> -->
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Label Content="通訊埠：" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" />
+                <ComboBox x:Name="CmbColorimeterPort" Grid.Row="0" Grid.Column="1" Margin="5" />
+
+                <Label Content="傳輸速率：" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="1" Grid.Column="1" Margin="5">
+                    <ComboBoxItem Content="9600" />
+                    <ComboBoxItem Content="19200" />
+                    <ComboBoxItem Content="38400" />
+                    <ComboBoxItem Content="57600" />
+                    <ComboBoxItem Content="115200" />
+                </ComboBox>
+
+                <Label Content="資料位元：" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="2" Grid.Column="1" Margin="5">
+                    <ComboBoxItem Content="5" />
+                    <ComboBoxItem Content="6" />
+                    <ComboBoxItem Content="7" />
+                    <ComboBoxItem Content="8" />
+                </ComboBox>
+
+                <Label Content="檢查位元：" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="3" Grid.Column="1" Margin="5">
+                    <ComboBoxItem Content="None" />
+                    <ComboBoxItem Content="Even" />
+                    <ComboBoxItem Content="Odd" />
+                </ComboBox>
+
+                <Label Content="停止位元：" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="4" Grid.Column="1" Margin="5">
+                    <ComboBoxItem Content="0" />
+                    <ComboBoxItem Content="1" />
+                    <ComboBoxItem Content="2" />
+                </ComboBox>
+            </Grid>
         </GroupBox>
 
         <!-- 區塊 2: DUT Comport 設定 -->
         <GroupBox Header="DUT Comport 設定" Grid.Row="1" Margin="10" Padding="5">
-            <StackPanel>
-                <TextBlock Text="此處放置 DUT Comport 相關的設定控制項..." />
-                <!-- 範例: <ComboBox Margin="5"/> -->
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Label Content="通訊埠：" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" />
+                <ComboBox x:Name="CmbDutPort" Grid.Row="0" Grid.Column="1" Margin="5" />
+
+                <Label Content="傳輸速率：" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="1" Grid.Column="1" Margin="5">
+                    <ComboBoxItem Content="9600" />
+                    <ComboBoxItem Content="19200" />
+                    <ComboBoxItem Content="38400" />
+                    <ComboBoxItem Content="57600" />
+                    <ComboBoxItem Content="115200" />
+                </ComboBox>
+
+                <Label Content="資料位元：" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="2" Grid.Column="1" Margin="5">
+                    <ComboBoxItem Content="5" />
+                    <ComboBoxItem Content="6" />
+                    <ComboBoxItem Content="7" />
+                    <ComboBoxItem Content="8" />
+                </ComboBox>
+
+                <Label Content="檢查位元：" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="3" Grid.Column="1" Margin="5">
+                    <ComboBoxItem Content="None" />
+                    <ComboBoxItem Content="Even" />
+                    <ComboBoxItem Content="Odd" />
+                </ComboBox>
+
+                <Label Content="停止位元：" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="4" Grid.Column="1" Margin="5">
+                    <ComboBoxItem Content="0" />
+                    <ComboBoxItem Content="1" />
+                    <ComboBoxItem Content="2" />
+                </ComboBox>
+            </Grid>
         </GroupBox>
 
         <!-- 區塊 3: 基本功能 -->

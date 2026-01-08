@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,6 +24,14 @@ namespace WpfAppGui
         public MainWindow()
         {
             InitializeComponent();
+            LoadSerialPorts();
+        }
+
+        private void LoadSerialPorts()
+        {
+            string[] portNames = SerialPort.GetPortNames();
+            CmbColorimeterPort.ItemsSource = portNames;
+            CmbDutPort.ItemsSource = portNames;
         }
     }
 }
