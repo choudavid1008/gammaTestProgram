@@ -24,6 +24,7 @@ namespace WpfAppGui
     public partial class MainWindow : Window
     {
         private const string ConfigFileName = "Config.txt";
+        private const string CsvFileName = "Result.csv";
         private List<int> _stepGrayValues;
         private Thread _workerThread;
         private volatile bool _isStopRequested;
@@ -33,7 +34,6 @@ namespace WpfAppGui
             InitializeComponent();
             LoadSerialPorts();
             LoadSettingsFromFile();
-            GenerateStepValues();
         }
 
         private void LoadSerialPorts()
@@ -237,6 +237,8 @@ namespace WpfAppGui
 
         private void Execute_Click(object sender, RoutedEventArgs e)
         {
+            GenerateStepValues(); // 在執行前，根據當前UI設定產生數值
+
             BtnExecute.IsEnabled = false;
             BtnStop.IsEnabled = true;
             _isStopRequested = false;
@@ -348,8 +350,7 @@ namespace WpfAppGui
                     }
                 }
 
-                string fileName = $"Result_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-                File.WriteAllText(fileName, csvContent.ToString());
+                File.WriteAllText(CsvFileName, csvContent.ToString());
             }
             catch (Exception ex)
             {
