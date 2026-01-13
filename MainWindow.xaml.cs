@@ -29,6 +29,8 @@ namespace WpfAppGui
         private Thread _workerThread;
         private volatile bool _isStopRequested;
         private Random _random = new Random();
+        private SerialPort _colorimeterPort;
+        private SerialPort _dutPort;
 
         public MainWindow()
         {
@@ -293,10 +295,14 @@ namespace WpfAppGui
                     }
 
                     // a. 跟DUT 發送 stepGrayValues[i]
-                    // (此處應加入實際的 DUT 通訊程式碼)
+                    SendBacklightBrightnessCommand(_stepGrayValues[i]);
 
                     // b. 從色度計取得 Brightness
-                    // (此處應加入實際的色度計通訊程式碼)
+                    // 實際應用中，您可以在此處發送讀取指令並解析回傳值
+                    // 例如: _colorimeterPort.WriteLine("READ_BRIGHTNESS");
+                    //       string response = _colorimeterPort.ReadLine();
+                    //       getBrightness[i] = ParseBrightness(response);
+
                     // 以下為模擬數據
                     getBrightness[i] = _random.NextDouble() * 200;
 
@@ -322,6 +328,10 @@ namespace WpfAppGui
             }
             finally
             {
+                // 斷開連線
+                DisconnectFromColorimeter();
+                DisconnectFromDut();
+
                 // 無論如何，都要在 UI 執行緒上還原按鈕狀態
                 Dispatcher.Invoke(() =>
                 {
@@ -333,7 +343,6 @@ namespace WpfAppGui
 
         private bool ConnectToColorimeter()
         {
-            /*
             try
             {
                 string portName = "";
@@ -358,7 +367,7 @@ namespace WpfAppGui
                     return false;
                 }
 
-                SerialPort colorimeterPort = new SerialPort
+                _colorimeterPort = new SerialPort
                 {
                     PortName = portName,
                     BaudRate = baudRate,
@@ -369,23 +378,19 @@ namespace WpfAppGui
                     WriteTimeout = 500
                 };
 
-                // colorimeterPort.Open();
-                // (此處應加入驗證連線是否成功的程式碼)
-
-                // colorimeterPort.Close(); // 如果只是為了測試連線，可以立刻關閉
+                _colorimeterPort.Open();
+                // (可以加入一個握手指令來驗證連線)
             }
             catch (Exception ex)
             {
                 ShowMessageBoxOnUi($"連接色度計時發生錯誤: {ex.Message}", "連線錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
-            */
-            return true; // 佔位符
+            return true;
         }
 
         private bool ConnectToDut()
         {
-            /*
             try
             {
                 string portName = "";
@@ -410,7 +415,7 @@ namespace WpfAppGui
                     return false;
                 }
 
-                SerialPort dutPort = new SerialPort
+                _dutPort = new SerialPort
                 {
                     PortName = portName,
                     BaudRate = baudRate,
@@ -421,18 +426,15 @@ namespace WpfAppGui
                     WriteTimeout = 500
                 };
 
-                // dutPort.Open();
-                // (此處應加入驗證連線是否成功的程式碼)
-
-                // dutPort.Close(); // 如果只是為了測試連線，可以立刻關閉
+                _dutPort.Open();
+                 // (可以加入一個握手指令來驗證連線)
             }
             catch (Exception ex)
             {
                 ShowMessageBoxOnUi($"連接 DUT 時發生錯誤: {ex.Message}", "連線錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
-            */
-            return true; // 佔位符
+            return true;
         }
 
         private void SaveResultsToCsv(double[] brightnessValues)
@@ -467,89 +469,73 @@ namespace WpfAppGui
             });
         }
 
-        private SerialPort GetConfiguredDutPort()
+        public void DisconnectFromColorimeter()
         {
-            string portName = "";
-            int baudRate = 115200;
-            int dataBits = 8;
-            Parity parity = Parity.None;
-            StopBits stopBits = StopBits.One;
-
-            // 從 UI 執行緒安全地讀取設定
-            Dispatcher.Invoke(() =>
+            try
             {
-                portName = CmbDutPort.SelectedItem as string;
-                baudRate = int.Parse((CmbDutBaudRate.SelectedItem as ComboBoxItem).Content as string);
-                dataBits = int.Parse((CmbDutDataBits.SelectedItem as ComboBoxItem).Content as string);
-                parity = (Parity)Enum.Parse(typeof(Parity), (CmbDutParity.SelectedItem as ComboBoxItem).Content as string, true);
-                stopBits = (StopBits)Enum.Parse(typeof(StopBits), (CmbDutStopBits.SelectedItem as ComboBoxItem).Content as string, true);
-            });
-
-            if (string.IsNullOrEmpty(portName))
-            {
-                ShowMessageBoxOnUi("DUT 通訊埠未選擇。", "錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
-                return null;
+                if (_colorimeterPort != null && _colorimeterPort.IsOpen)
+                {
+                    _colorimeterPort.Close();
+                }
+                _colorimeterPort?.Dispose();
             }
-
-            return new SerialPort
+            catch (Exception ex)
             {
-                PortName = portName,
-                BaudRate = baudRate,
-                DataBits = dataBits,
-                Parity = parity,
-                StopBits = stopBits,
-                ReadTimeout = 500,
-                WriteTimeout = 500
-            };
+                ShowMessageBoxOnUi($"關閉色度計連接時發生錯誤: {ex.Message}", "關閉失敗", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        public void DisconnectFromDut()
+        {
+            try
+            {
+                if (_dutPort != null && _dutPort.IsOpen)
+                {
+                    _dutPort.Close();
+                }
+                _dutPort?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                ShowMessageBoxOnUi($"關閉 DUT 連接時發生錯誤: {ex.Message}", "關閉失敗", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public void SendLcdFillCommand(string hexColor)
         {
-            SerialPort dutPort = null;
             try
             {
-                dutPort = GetConfiguredDutPort();
-                if (dutPort == null) return;
-
-                dutPort.Open();
-                dutPort.WriteLine($"lcd fill {hexColor}");
+                if (_dutPort != null && _dutPort.IsOpen)
+                {
+                    _dutPort.WriteLine($"lcd fill {hexColor}");
+                }
+                else
+                {
+                    ShowMessageBoxOnUi("DUT 未連接，無法發送指令。", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
             catch (Exception ex)
             {
                 ShowMessageBoxOnUi($"發送 LCD Fill 指令時發生錯誤: {ex.Message}", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            finally
-            {
-                if (dutPort != null && dutPort.IsOpen)
-                {
-                    dutPort.Close();
-                }
-                dutPort?.Dispose();
-            }
         }
 
         public void SendBacklightBrightnessCommand(int brightness)
         {
-            SerialPort dutPort = null;
             try
             {
-                dutPort = GetConfiguredDutPort();
-                if (dutPort == null) return;
-
-                dutPort.Open();
-                dutPort.WriteLine($"fct-bl set_brightness {brightness}");
+                if (_dutPort != null && _dutPort.IsOpen)
+                {
+                    _dutPort.WriteLine($"fct-bl set_brightness {brightness}");
+                }
+                else
+                {
+                    ShowMessageBoxOnUi("DUT 未連接，無法發送指令。", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
             catch (Exception ex)
             {
                 ShowMessageBoxOnUi($"發送 Backlight Brightness 指令時發生錯誤: {ex.Message}", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                if (dutPort != null && dutPort.IsOpen)
-                {
-                    dutPort.Close();
-                }
-                dutPort?.Dispose();
             }
         }
     }
