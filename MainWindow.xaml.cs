@@ -282,9 +282,6 @@ namespace WpfAppGui
                     }
                 });
 
-                // 設定 LCD 顏色為白色
-                SendDutCommand("lcd fill 0xffffff");
-
                 // 3. 執行主迴圈
                 for (int i = 0; i < _stepGrayValues.Count; i++)
                 {
@@ -296,7 +293,7 @@ namespace WpfAppGui
                     }
 
                     // a. 跟DUT 發送 stepGrayValues[i]
-                    SendDutCommand($"fct-bl set_brightness {_stepGrayValues[i]}");
+                    // (此處應加入實際的 DUT 通訊程式碼)
 
                     // b. 從色度計取得 Brightness
                     // (此處應加入實際的色度計通訊程式碼)
@@ -438,11 +435,6 @@ namespace WpfAppGui
             return true; // 佔位符
         }
 
-        private void SendDutCommand(string command)
-        {
-            // (此處應加入實際的 DUT 通訊程式碼, 例如 dutPort.WriteLine(command);)
-        }
-
         private void SaveResultsToCsv(double[] brightnessValues)
         {
             try
@@ -473,6 +465,16 @@ namespace WpfAppGui
             {
                 MessageBox.Show(this, message, caption, button, icon);
             });
+        }
+
+        public void SendLcdFillCommand(string hexColor)
+        {
+            // (此處應加入透過 DUT comport 發送 "lcd fill [hexColor]" 指令的程式碼)
+        }
+
+        public void SendBacklightBrightnessCommand(int brightness)
+        {
+            // (此處應加入透過 DUT comport 發送 "fct-bl set_brightness [brightness]" 指令的程式碼)
         }
     }
 }
