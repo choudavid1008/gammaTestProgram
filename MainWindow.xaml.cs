@@ -28,6 +28,7 @@ namespace WpfAppGui
         private List<int> _stepGrayValues;
         private Thread _workerThread;
         private volatile bool _isStopRequested;
+        private Random _random = new Random();
 
         public MainWindow()
         {
@@ -183,13 +184,13 @@ namespace WpfAppGui
             SetComboBoxValue(CmbColorimeterBaudRate, "115200");
             SetComboBoxValue(CmbColorimeterDataBits, "8");
             SetComboBoxValue(CmbColorimeterParity, "None");
-            SetComboBoxValue(CmbColorimeterStopBits, "1");
+            SetComboBoxValue(CmbColorimeterStopBits, "One");
 
             // DUT 預設值
             SetComboBoxValue(CmbDutBaudRate, "115200");
             SetComboBoxValue(CmbDutDataBits, "8");
             SetComboBoxValue(CmbDutParity, "None");
-            SetComboBoxValue(CmbDutStopBits, "1");
+            SetComboBoxValue(CmbDutStopBits, "One");
 
             // 基本功能預設值
             SetComboBoxValue(CmbSteps, "64");
@@ -281,6 +282,9 @@ namespace WpfAppGui
                     }
                 });
 
+                // 設定 LCD 顏色為白色
+                SendDutCommand("lcd fill 0xffffff");
+
                 // 3. 執行主迴圈
                 for (int i = 0; i < _stepGrayValues.Count; i++)
                 {
@@ -292,12 +296,12 @@ namespace WpfAppGui
                     }
 
                     // a. 跟DUT 發送 stepGrayValues[i]
-                    // (此處應加入實際的 DUT 通訊程式碼)
+                    SendDutCommand($"fct-bl set_brightness {_stepGrayValues[i]}");
 
                     // b. 從色度計取得 Brightness
                     // (此處應加入實際的色度計通訊程式碼)
                     // 以下為模擬數據
-                    getBrightness[i] = new Random().NextDouble() * 200;
+                    getBrightness[i] = _random.NextDouble() * 200;
 
                     // 將目前結果顯示在 UI 上
                     Dispatcher.Invoke(() =>
@@ -432,6 +436,11 @@ namespace WpfAppGui
             }
             */
             return true; // 佔位符
+        }
+
+        private void SendDutCommand(string command)
+        {
+            // (此處應加入實際的 DUT 通訊程式碼, 例如 dutPort.WriteLine(command);)
         }
 
         private void SaveResultsToCsv(double[] brightnessValues)

@@ -2,11 +2,11 @@ ColorimeterPort:
 ColorimeterBaudRate: 115200
 ColorimeterDataBits: 8
 ColorimeterParity: None
-ColorimeterStopBits: 1
+ColorimeterStopBits: One
 DutPort:
 DutBaudRate: 115200
 DutDataBits: 8
 DutParity: None
-DutStopBits: 1
+DutStopBits: One
 Steps: 64
 IntervalTime: 200

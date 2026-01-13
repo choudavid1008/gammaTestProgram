@@ -60,9 +60,9 @@
 
                 <Label Content="停止位元：" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" />
                 <ComboBox x:Name="CmbColorimeterStopBits" Grid.Row="4" Grid.Column="1" Margin="5">
-                    <ComboBoxItem Content="0" />
-                    <ComboBoxItem Content="1" />
-                    <ComboBoxItem Content="2" />
+                    <ComboBoxItem Content="One" />
+                    <ComboBoxItem Content="Two" />
+                    <ComboBoxItem Content="OnePointFive" />
                 </ComboBox>
             </Grid>
         </GroupBox>
@@ -111,9 +111,9 @@
 
                 <Label Content="停止位元：" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" />
                 <ComboBox x:Name="CmbDutStopBits" Grid.Row="4" Grid.Column="1" Margin="5">
-                    <ComboBoxItem Content="0" />
-                    <ComboBoxItem Content="1" />
-                    <ComboBoxItem Content="2" />
+                    <ComboBoxItem Content="One" />
+                    <ComboBoxItem Content="Two" />
+                    <ComboBoxItem Content="OnePointFive" />
                 </ComboBox>
             </Grid>
         </GroupBox>
