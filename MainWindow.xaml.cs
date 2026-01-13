@@ -467,14 +467,90 @@ namespace WpfAppGui
             });
         }
 
+        private SerialPort GetConfiguredDutPort()
+        {
+            string portName = "";
+            int baudRate = 115200;
+            int dataBits = 8;
+            Parity parity = Parity.None;
+            StopBits stopBits = StopBits.One;
+
+            // 從 UI 執行緒安全地讀取設定
+            Dispatcher.Invoke(() =>
+            {
+                portName = CmbDutPort.SelectedItem as string;
+                baudRate = int.Parse((CmbDutBaudRate.SelectedItem as ComboBoxItem).Content as string);
+                dataBits = int.Parse((CmbDutDataBits.SelectedItem as ComboBoxItem).Content as string);
+                parity = (Parity)Enum.Parse(typeof(Parity), (CmbDutParity.SelectedItem as ComboBoxItem).Content as string, true);
+                stopBits = (StopBits)Enum.Parse(typeof(StopBits), (CmbDutStopBits.SelectedItem as ComboBoxItem).Content as string, true);
+            });
+
+            if (string.IsNullOrEmpty(portName))
+            {
+                ShowMessageBoxOnUi("DUT 通訊埠未選擇。", "錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
+
+            return new SerialPort
+            {
+                PortName = portName,
+                BaudRate = baudRate,
+                DataBits = dataBits,
+                Parity = parity,
+                StopBits = stopBits,
+                ReadTimeout = 500,
+                WriteTimeout = 500
+            };
+        }
+
         public void SendLcdFillCommand(string hexColor)
         {
-            // (此處應加入透過 DUT comport 發送 "lcd fill [hexColor]" 指令的程式碼)
+            SerialPort dutPort = null;
+            try
+            {
+                dutPort = GetConfiguredDutPort();
+                if (dutPort == null) return;
+
+                dutPort.Open();
+                dutPort.WriteLine($"lcd fill {hexColor}");
+            }
+            catch (Exception ex)
+            {
+                ShowMessageBoxOnUi($"發送 LCD Fill 指令時發生錯誤: {ex.Message}", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (dutPort != null && dutPort.IsOpen)
+                {
+                    dutPort.Close();
+                }
+                dutPort?.Dispose();
+            }
         }
 
         public void SendBacklightBrightnessCommand(int brightness)
         {
-            // (此處應加入透過 DUT comport 發送 "fct-bl set_brightness [brightness]" 指令的程式碼)
+            SerialPort dutPort = null;
+            try
+            {
+                dutPort = GetConfiguredDutPort();
+                if (dutPort == null) return;
+
+                dutPort.Open();
+                dutPort.WriteLine($"fct-bl set_brightness {brightness}");
+            }
+            catch (Exception ex)
+            {
+                ShowMessageBoxOnUi($"發送 Backlight Brightness 指令時發生錯誤: {ex.Message}", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (dutPort != null && dutPort.IsOpen)
+                {
+                    dutPort.Close();
+                }
+                dutPort?.Dispose();
+            }
         }
     }
 }
