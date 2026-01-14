@@ -26,8 +26,7 @@ namespace WpfAppGui
         private const string ConfigFileName = "Config.txt";
         private const string CsvFileName = "graylevelsrgbw.csv";
         private List<int> _stepGrayValues;
-        private Thread _workerThread;
-        private volatile bool _isStopRequested;
+        private CancellationTokenSource _cts;
         private Random _random = new Random();
         private SerialPort _colorimeterPort;
         private SerialPort _dutPort;
@@ -238,35 +237,53 @@ namespace WpfAppGui
             // The logic has been moved to the Execute_Click event
         }
 
-        private void Execute_Click(object sender, RoutedEventArgs e)
+        private async void Execute_Click(object sender, RoutedEventArgs e)
         {
             TxtTestData.Clear(); // 清除先前的測試數據
             GenerateStepValues(); // 在執行前，根據當前UI設定產生數值
 
+            _cts = new CancellationTokenSource();
             BtnExecute.IsEnabled = false;
             BtnStop.IsEnabled = true;
-            _isStopRequested = false;
 
-            _workerThread = new Thread(MeasurementLoop);
-            _workerThread.Start();
+            try
+            {
+                await MeasurementLoopAsync(_cts.Token);
+                // 只有在沒有被取消的情況下才顯示完成訊息
+                ShowMessageBoxOnUi("測量完成並已儲存結果。", "完成", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (OperationCanceledException)
+            {
+                ShowMessageBoxOnUi("操作已被使用者停止。", "已停止", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                ShowMessageBoxOnUi($"執行時發生未預期的錯誤: {ex.Message}", "錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                BtnExecute.IsEnabled = true;
+                BtnStop.IsEnabled = false;
+                _cts.Dispose();
+                _cts = null;
+            }
         }
 
         private void Stop_Click(object sender, RoutedEventArgs e)
         {
-            if (_workerThread != null && _workerThread.IsAlive)
-            {
-                _isStopRequested = true;
-                BtnStop.IsEnabled = false; // 防止重複點擊
-            }
+            _cts?.Cancel();
+            BtnStop.IsEnabled = false; // 防止重複點擊
         }
 
-        private void MeasurementLoop()
+        private async Task MeasurementLoopAsync(CancellationToken token)
         {
             try
             {
-                // 1. 確認連線
-                if (!ConnectToColorimeter() || !ConnectToDut())
+                // 1. 確認連線 (在 UI 執行緒外執行，避免阻塞)
+                bool connected = await Task.Run(() => ConnectToColorimeter() && ConnectToDut(), token);
+                if (!connected)
                 {
+                     // ShowMessageBoxOnUi 已處理執行緒切換，可以直接呼叫
                     ShowMessageBoxOnUi("無法連線到 COM Port，請檢查設定。", "連線失敗", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
@@ -274,25 +291,17 @@ namespace WpfAppGui
                 // 2. 準備資料陣列
                 double[] getBrightness = new double[_stepGrayValues.Count];
 
-                // 在迴圈外解析延遲時間
+                // 在迴圈外解析延遲時間 (現在可以在 UI 執行緒直接讀取)
                 int interval = 200; // 預設值
-                Dispatcher.Invoke(() =>
+                if (int.TryParse(TxtIntervalTime.Text, out int parsedInterval))
                 {
-                    if (int.TryParse(TxtIntervalTime.Text, out int parsedInterval))
-                    {
-                        interval = parsedInterval;
-                    }
-                });
+                    interval = parsedInterval;
+                }
 
                 // 3. 執行主迴圈
                 for (int i = 0; i < _stepGrayValues.Count; i++)
                 {
-                    // 檢查是否被要求停止
-                    if (_isStopRequested)
-                    {
-                        ShowMessageBoxOnUi("操作已被使用者停止。", "已停止", MessageBoxButton.OK, MessageBoxImage.Information);
-                        return; // 提前退出
-                    }
+                    token.ThrowIfCancellationRequested();
 
                     // a. 跟DUT 發送 stepGrayValues[i]
                     SendBacklightBrightnessCommand(_stepGrayValues[i]);
@@ -307,37 +316,21 @@ namespace WpfAppGui
                     getBrightness[i] = _random.NextDouble() * 200;
 
                     // 將目前結果顯示在 UI 上
-                    Dispatcher.Invoke(() =>
-                    {
-                        TxtTestData.AppendText($"Gray: {_stepGrayValues[i]}, Brightness: {getBrightness[i]:F3}\n");
-                        TxtTestData.ScrollToEnd();
-                    });
+                    TxtTestData.AppendText($"Gray: {_stepGrayValues[i]}, Brightness: {getBrightness[i]:F3}\n");
+                    TxtTestData.ScrollToEnd();
 
                     // c. delay IntervalTime
-                    Thread.Sleep(interval);
+                    await Task.Delay(interval, token);
                 }
 
-                // 4. 儲存結果 (如果沒有被停止)
+                // 4. 儲存結果
                 SaveResultsToCsv(getBrightness);
-                ShowMessageBoxOnUi("測量完成並已儲存結果。", "完成", MessageBoxButton.OK, MessageBoxImage.Information);
-
-            }
-            catch (Exception ex)
-            {
-                ShowMessageBoxOnUi($"執行時發生未預期的錯誤: {ex.Message}", "錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 // 斷開連線
                 DisconnectFromColorimeter();
                 DisconnectFromDut();
-
-                // 無論如何，都要在 UI 執行緒上還原按鈕狀態
-                Dispatcher.Invoke(() =>
-                {
-                    BtnExecute.IsEnabled = true;
-                    BtnStop.IsEnabled = false;
-                });
             }
         }
 
