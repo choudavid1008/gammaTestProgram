@@ -23,6 +23,17 @@ namespace WpfAppGui
     /// </summary>
     public partial class MainWindow : Window
     {
+        private class ComPortSettings
+        {
+            public string PortName { get; set; }
+            public int BaudRate { get; set; }
+            public int DataBits { get; set; }
+            public Parity Parity { get; set; }
+            public StopBits StopBits { get; set; }
+        }
+
+        private readonly object _dutLock = new object();
+
         private const string ConfigFileName = "Config.txt";
         private const string CsvFileName = "graylevelsrgbw.csv";
         private List<int> _stepGrayValues;
@@ -237,10 +248,36 @@ namespace WpfAppGui
             // The logic has been moved to the Execute_Click event
         }
 
+        private ComPortSettings ReadComPortSettingsFromUI(ComboBox cmbPort, ComboBox cmbBaudRate, ComboBox cmbDataBits, ComboBox cmbParity, ComboBox cmbStopBits)
+        {
+            if (cmbPort.SelectedItem == null)
+            {
+                return null;
+            }
+
+            return new ComPortSettings
+            {
+                PortName = cmbPort.SelectedItem as string,
+                BaudRate = int.Parse((cmbBaudRate.SelectedItem as ComboBoxItem).Content as string),
+                DataBits = int.Parse((cmbDataBits.SelectedItem as ComboBoxItem).Content as string),
+                Parity = (Parity)Enum.Parse(typeof(Parity), (cmbParity.SelectedItem as ComboBoxItem).Content as string, true),
+                StopBits = (StopBits)Enum.Parse(typeof(StopBits), (cmbStopBits.SelectedItem as ComboBoxItem).Content as string, true)
+            };
+        }
+
         private async void Execute_Click(object sender, RoutedEventArgs e)
         {
             TxtTestData.Clear(); // 清除先前的測試數據
             GenerateStepValues(); // 在執行前，根據當前UI設定產生數值
+
+            var colorimeterSettings = ReadComPortSettingsFromUI(CmbColorimeterPort, CmbColorimeterBaudRate, CmbColorimeterDataBits, CmbColorimeterParity, CmbColorimeterStopBits);
+            var dutSettings = ReadComPortSettingsFromUI(CmbDutPort, CmbDutBaudRate, CmbDutDataBits, CmbDutParity, CmbDutStopBits);
+
+            if (colorimeterSettings == null || dutSettings == null)
+            {
+                ShowMessageBoxOnUi("請選擇有效的 COM Port。", "設定錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
             _cts = new CancellationTokenSource();
             BtnExecute.IsEnabled = false;
@@ -248,7 +285,7 @@ namespace WpfAppGui
 
             try
             {
-                await MeasurementLoopAsync(_cts.Token);
+                await MeasurementLoopAsync(_cts.Token, colorimeterSettings, dutSettings);
                 // 只有在沒有被取消的情況下才顯示完成訊息
                 ShowMessageBoxOnUi("測量完成並已儲存結果。", "完成", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -275,15 +312,15 @@ namespace WpfAppGui
             BtnStop.IsEnabled = false; // 防止重複點擊
         }
 
-        private async Task MeasurementLoopAsync(CancellationToken token)
+        private async Task MeasurementLoopAsync(CancellationToken token, ComPortSettings colorimeterSettings, ComPortSettings dutSettings)
         {
             try
             {
                 // 1. 確認連線 (在 UI 執行緒外執行，避免阻塞)
-                bool connected = await Task.Run(() => ConnectToColorimeter() && ConnectToDut(), token);
+                bool connected = await Task.Run(() => ConnectToColorimeter(colorimeterSettings) && ConnectToDut(dutSettings), token);
                 if (!connected)
                 {
-                     // ShowMessageBoxOnUi 已處理執行緒切換，可以直接呼叫
+                    // ShowMessageBoxOnUi 已處理執行緒切換，可以直接呼叫
                     ShowMessageBoxOnUi("無法連線到 COM Port，請檢查設定。", "連線失敗", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
@@ -334,27 +371,11 @@ namespace WpfAppGui
             }
         }
 
-        private bool ConnectToColorimeter()
+        private bool ConnectToColorimeter(ComPortSettings settings)
         {
             try
             {
-                string portName = "";
-                int baudRate = 115200;
-                int dataBits = 8;
-                Parity parity = Parity.None;
-                StopBits stopBits = StopBits.One;
-
-                // 從 UI 執行緒安全地讀取設定
-                Dispatcher.Invoke(() =>
-                {
-                    portName = CmbColorimeterPort.SelectedItem as string;
-                    baudRate = int.Parse((CmbColorimeterBaudRate.SelectedItem as ComboBoxItem).Content as string);
-                    dataBits = int.Parse((CmbColorimeterDataBits.SelectedItem as ComboBoxItem).Content as string);
-                    parity = (Parity)Enum.Parse(typeof(Parity), (CmbColorimeterParity.SelectedItem as ComboBoxItem).Content as string, true);
-                    stopBits = (StopBits)Enum.Parse(typeof(StopBits), (CmbColorimeterStopBits.SelectedItem as ComboBoxItem).Content as string, true);
-                });
-
-                if (string.IsNullOrEmpty(portName))
+                if (string.IsNullOrEmpty(settings.PortName))
                 {
                     ShowMessageBoxOnUi("色度計通訊埠未選擇。", "錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
                     return false;
@@ -362,11 +383,11 @@ namespace WpfAppGui
 
                 _colorimeterPort = new SerialPort
                 {
-                    PortName = portName,
-                    BaudRate = baudRate,
-                    DataBits = dataBits,
-                    Parity = parity,
-                    StopBits = stopBits,
+                    PortName = settings.PortName,
+                    BaudRate = settings.BaudRate,
+                    DataBits = settings.DataBits,
+                    Parity = settings.Parity,
+                    StopBits = settings.StopBits,
                     ReadTimeout = 500,
                     WriteTimeout = 500
                 };
@@ -382,27 +403,11 @@ namespace WpfAppGui
             return true;
         }
 
-        private bool ConnectToDut()
+        private bool ConnectToDut(ComPortSettings settings)
         {
             try
             {
-                string portName = "";
-                int baudRate = 115200;
-                int dataBits = 8;
-                Parity parity = Parity.None;
-                StopBits stopBits = StopBits.One;
-
-                // 從 UI 執行緒安全地讀取設定
-                Dispatcher.Invoke(() =>
-                {
-                    portName = CmbDutPort.SelectedItem as string;
-                    baudRate = int.Parse((CmbDutBaudRate.SelectedItem as ComboBoxItem).Content as string);
-                    dataBits = int.Parse((CmbDutDataBits.SelectedItem as ComboBoxItem).Content as string);
-                    parity = (Parity)Enum.Parse(typeof(Parity), (CmbDutParity.SelectedItem as ComboBoxItem).Content as string, true);
-                    stopBits = (StopBits)Enum.Parse(typeof(StopBits), (CmbDutStopBits.SelectedItem as ComboBoxItem).Content as string, true);
-                });
-
-                if (string.IsNullOrEmpty(portName))
+                if (string.IsNullOrEmpty(settings.PortName))
                 {
                     ShowMessageBoxOnUi("DUT 通訊埠未選擇。", "錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
                     return false;
@@ -410,11 +415,11 @@ namespace WpfAppGui
 
                 _dutPort = new SerialPort
                 {
-                    PortName = portName,
-                    BaudRate = baudRate,
-                    DataBits = dataBits,
-                    Parity = parity,
-                    StopBits = stopBits,
+                    PortName = settings.PortName,
+                    BaudRate = settings.BaudRate,
+                    DataBits = settings.DataBits,
+                    Parity = settings.Parity,
+                    StopBits = settings.StopBits,
                     ReadTimeout = 500,
                     WriteTimeout = 500
                 };
@@ -498,13 +503,16 @@ namespace WpfAppGui
         {
             try
             {
-                if (_dutPort != null && _dutPort.IsOpen)
+                lock (_dutLock)
                 {
-                    _dutPort.WriteLine($"lcd fill {hexColor}");
-                }
-                else
-                {
-                    ShowMessageBoxOnUi("DUT 未連接，無法發送指令。", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    if (_dutPort != null && _dutPort.IsOpen)
+                    {
+                        _dutPort.WriteLine($"lcd fill {hexColor}");
+                    }
+                    else
+                    {
+                        ShowMessageBoxOnUi("DUT 未連接，無法發送指令。", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
                 }
             }
             catch (Exception ex)
@@ -517,13 +525,16 @@ namespace WpfAppGui
         {
             try
             {
-                if (_dutPort != null && _dutPort.IsOpen)
+                lock (_dutLock)
                 {
-                    _dutPort.WriteLine($"fct-bl set_brightness {brightness}");
-                }
-                else
-                {
-                    ShowMessageBoxOnUi("DUT 未連接，無法發送指令。", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    if (_dutPort != null && _dutPort.IsOpen)
+                    {
+                        _dutPort.WriteLine($"fct-bl set_brightness {brightness}");
+                    }
+                    else
+                    {
+                        ShowMessageBoxOnUi("DUT 未連接，無法發送指令。", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
                 }
             }
             catch (Exception ex)
