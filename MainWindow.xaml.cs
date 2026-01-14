@@ -424,6 +424,7 @@ namespace WpfAppGui
                     WriteTimeout = 500
                 };
 
+                _dutPort.NewLine = "\r\n";
                 _dutPort.Open();
                  // (可以加入一個握手指令來驗證連線)
             }
