@@ -47,6 +47,22 @@ namespace WpfAppGui
             InitializeComponent();
             LoadSerialPorts();
             LoadSettingsFromFile();
+
+            // Execute backlight calibration and display the results
+            try
+            {
+                BacklightCalibrator calibrator = new BacklightCalibrator(this);
+                double[] coefficients = calibrator.PerformCalibration();
+
+                TxtTestData.Text = "Backlight Calibration Coefficients (a, b, c):\n";
+                TxtTestData.AppendText($"a = {coefficients[0]:F8}\n");
+                TxtTestData.AppendText($"b = {coefficients[1]:F8}\n");
+                TxtTestData.AppendText($"c = {coefficients[2]:F8}\n");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred during backlight calibration: {ex.Message}", "Calibration Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void LoadSerialPorts()
@@ -542,6 +558,26 @@ namespace WpfAppGui
             {
                 ShowMessageBoxOnUi($"發送 Backlight Brightness 指令時發生錯誤: {ex.Message}", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>
+        /// Reads luminance from the colorimeter.
+        /// NOTE: This is a placeholder and needs to be replaced with actual hardware communication.
+        /// </summary>
+        /// <returns>A simulated luminance value.</returns>
+        public double ReadLuminanceFromColorimeter()
+        {
+            // TODO: Implement actual communication with the colorimeter.
+            // e.g.,
+            // lock(_colorimeterLock) // if you add a lock for the colorimeter
+            // {
+            //     _colorimeterPort.WriteLine("READ_LUMINANCE");
+            //     string response = _colorimeterPort.ReadLine();
+            //     return double.Parse(response);
+            // }
+
+            // For now, return a random value for simulation
+            return _random.NextDouble() * 100.0;
         }
     }
 }
