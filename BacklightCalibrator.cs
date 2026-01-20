@@ -1,9 +1,12 @@
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.Optimization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
+// Note: The LevenbergMarquardtMinimizer is included in the main MathNet.Numerics package in v5.0.0
+// No separate Optimization package is needed.
+using MathNet.Numerics.Optimization;
 
 namespace WpfAppGui
 {
