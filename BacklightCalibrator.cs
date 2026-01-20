@@ -65,9 +65,17 @@ namespace WpfAppGui
             var minimizer = new LevenbergMarquardtMinimizer(maximumIterations: 5000);
             var result = minimizer.FindMinimum(objective, initialGuess);
 
-            if (!result.ReasonForExit.HasFlag(ExitCondition.Converged))
+            bool isOk =
+            result.ReasonForExit.HasFlag(ExitCondition.Converged) ||
+            result.ReasonForExit.HasFlag(ExitCondition.RelativePoints);
+
+            if (!isOk)
             {
-                 return new CalibrationResult { IsSuccess = false, ErrorMessage = $"非線性擬合演算法未收斂: {result.ReasonForExit}" };
+                return new CalibrationResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"擬合失敗: {result.ReasonForExit}"
+                };
             }
 
             double a_coeff = result.MinimizingPoint[0];
