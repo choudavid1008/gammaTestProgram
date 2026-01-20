@@ -1,9 +1,9 @@
 using MathNet.Numerics;
+using MathNet.Numerics.LinearAlgebra.Double;
+using MathNet.Numerics.Optimization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace WpfAppGui
 {
@@ -27,20 +27,20 @@ namespace WpfAppGui
     {
         public BacklightCalibrator()
         {
-            // Constructor is now empty as it doesn't need any dependencies.
         }
 
-        /// <summary>
-        /// Performs backlight calibration using an exponential model fit.
-        /// y = a * e^(b * x)
-        /// </summary>
+        private static double ExponentialModel(Vector<double> parameters, double x)
+        {
+            return parameters[0] * Math.Exp(parameters[1] * x);
+        }
+
         public CalibrationResult PerformCalibration()
         {
             // 1. Define input values
             double[] pwm_inputs = { 0, 10, 25, 50, 75, 85, 95, 97, 98, 100 };
             double[] measured_luminances = { 1, 1, 1, 3, 18, 37, 75, 87, 93, 107 };
 
-            // 2. Data Filtering: Exclude points where the measured value is near zero.
+            // 2. Data Filtering
             var dataPoints = pwm_inputs.Zip(measured_luminances, (x, y) => new { Pwm = x, Lum = y })
                                        .Where(p => p.Lum > 0.001)
                                        .ToList();
@@ -53,34 +53,43 @@ namespace WpfAppGui
             double[] x_valid = dataPoints.Select(p => p.Pwm).ToArray();
             double[] y_valid = dataPoints.Select(p => p.Lum).ToArray();
 
-            // 3. Model Transformation and Linear Fitting
-            // Transform y = a * e^(b*x) to ln(y) = ln(a) + b*x
-            double[] y_log = y_valid.Select(y => Math.Log(y)).ToArray();
+            // 3. Set up the non-linear optimization problem
+            var objective = ObjectiveFunction.NonlinearModel(
+                ExponentialModel,
+                x_valid,
+                y_valid
+            );
 
-            // Perform linear regression: ln(y) = intercept + slope * x
-            var parameters = Fit.Line(x_valid, y_log);
-            double intercept = parameters.Item1; // ln(a)
-            double slope = parameters.Item2;     // b
+            // 4. Use the proven initial guess from the Python script and increase max iterations
+            var initialGuess = new DenseVector(new[] { 2.5, 0.04 });
+            var minimizer = new LevenbergMarquardtMinimizer(maximumIterations: 5000);
+            var result = minimizer.FindMinimum(objective, initialGuess);
 
-            // 4. Recover original coefficients
-            double a_coeff = Math.Exp(intercept);
-            double b_coeff = slope;
+            if (!result.ReasonForExit.HasFlag(ExitCondition.Converged))
+            {
+                 return new CalibrationResult { IsSuccess = false, ErrorMessage = $"非線性擬合演算法未收斂: {result.ReasonForExit}" };
+            }
 
-            // 5. Generate prediction table
-            var steps_5_percent = Enumerable.Range(0, 20).Select(i => (double)i * 5); // 0, 5, ..., 95
-            var steps_1_percent = Enumerable.Range(96, 5).Select(i => (double)i);      // 96, 97, 98, 99, 100
+            // 5. Extract final coefficients
+            double a_coeff = result.MinimizingPoint[0];
+            double b_coeff = result.MinimizingPoint[1];
+
+            // 6. Generate prediction table
+            var steps_5_percent = Enumerable.Range(0, 20).Select(i => (double)i * 5);
+            var steps_1_percent = Enumerable.Range(96, 5).Select(i => (double)i);
             var prediction_pwm_inputs = steps_5_percent.Concat(steps_1_percent).Distinct().OrderBy(p => p);
 
             var predictionTable = new List<Tuple<double, double>>();
+            var finalParameters = new DenseVector(new[] { a_coeff, b_coeff });
             foreach (var pwm in prediction_pwm_inputs)
             {
-                double predictedValue = (pwm == 0) ? 0.0 : a_coeff * Math.Exp(b_coeff * pwm);
+                double predictedValue = (pwm == 0) ? 0.0 : ExponentialModel(finalParameters, pwm);
                 predictionTable.Add(new Tuple<double, double>(pwm, predictedValue));
             }
 
-            // 6. Validation
+            // 7. Validation
             double measured_max = measured_luminances.Last();
-            double predicted_max = a_coeff * Math.Exp(b_coeff * 100);
+            double predicted_max = ExponentialModel(finalParameters, 100);
 
             return new CalibrationResult
             {
