@@ -51,17 +51,54 @@ namespace WpfAppGui
             // Execute backlight calibration and display the results
             try
             {
-                BacklightCalibrator calibrator = new BacklightCalibrator(this);
-                double[] coefficients = calibrator.PerformCalibration();
+                BacklightCalibrator calibrator = new BacklightCalibrator();
+                CalibrationResult result = calibrator.PerformCalibration();
 
-                TxtTestData.Text = "Backlight Calibration Coefficients (a, b, c):\n";
-                TxtTestData.AppendText($"a = {coefficients[0]:F8}\n");
-                TxtTestData.AppendText($"b = {coefficients[1]:F8}\n");
-                TxtTestData.AppendText($"c = {coefficients[2]:F8}\n");
+                StringBuilder sb = new StringBuilder();
+
+                if (result.IsSuccess)
+                {
+                    sb.AppendLine("--- 數據擬合摘要 ---");
+                    sb.AppendLine($"原始數據點數: {result.OriginalDataCount}");
+                    sb.AppendLine($"用於擬合的有效數據點數 (測量值 > 0.001): {result.ValidDataCount}");
+                    sb.AppendLine();
+                    sb.AppendLine("--- 校準成功 ---");
+                    sb.AppendLine("背光曲線擬合完成 (y = a * e^(b * x)):");
+                    sb.AppendLine($"Fitted Coefficient (a): {result.A_Coeff:F6}");
+                    sb.AppendLine($"Fitted Coefficient (b): {result.B_Coeff:F6}");
+                    sb.AppendLine($"最終公式: Measured Value ≈ {result.A_Coeff:F6} * e^({result.B_Coeff:F6} * PWM)");
+                    sb.AppendLine();
+                    sb.AppendLine("--- 預測背光響應曲線 (y = a * e^(b * x)) ---");
+                    sb.AppendLine($"{"PWM Input (x)",-15} | {"Predicted Value (y)",-20}");
+                    sb.AppendLine($"{new string('-', 15)} | {new string('-', 20)}");
+
+                    foreach (var entry in result.PredictionTable)
+                    {
+                        if (entry.Item1 == 0)
+                        {
+                            sb.AppendLine($"{entry.Item1,-15:F0} | {entry.Item2,-20:F3} (物理零點)");
+                        }
+                        else
+                        {
+                            sb.AppendLine($"{entry.Item1,-15:F0} | {entry.Item2,-20:F3}");
+                        }
+                    }
+
+                    sb.AppendLine();
+                    sb.AppendLine($"[驗證] 實際 100% 測量值: {result.MeasuredMax:F3}");
+                    sb.AppendLine($"[驗證] 擬合公式 100% 預測值: {result.PredictedMax:F3}");
+                }
+                else
+                {
+                    sb.AppendLine("--- 校準失敗 ---");
+                    sb.AppendLine(result.ErrorMessage);
+                }
+
+                TxtTestData.Text = sb.ToString();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"An error occurred during backlight calibration: {ex.Message}", "Calibration Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"執行背光校準時發生未預期的錯誤: {ex.Message}", "校準失敗", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
