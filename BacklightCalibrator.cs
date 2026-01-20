@@ -58,7 +58,7 @@ namespace WpfAppGui
             double[] y_log = y_valid.Select(y => Math.Log(y)).ToArray();
 
             // Perform linear regression: ln(y) = intercept + slope * x
-            Tuple<double, double> parameters = Fit.Line(x_valid, y_log);
+            var parameters = Fit.Line(x_valid, y_log);
             double intercept = parameters.Item1; // ln(a)
             double slope = parameters.Item2;     // b
 
