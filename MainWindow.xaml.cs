@@ -47,12 +47,21 @@ namespace WpfAppGui
             InitializeComponent();
             LoadSerialPorts();
             LoadSettingsFromFile();
+            Execute_Click2();
+        }
 
-            // Execute backlight calibration and display the results
+        private async void Execute_Click2()
+        {
+            // 1. Measure luminance values by interacting with hardware
+            double[] measuredLuminances = await MeasureLuminanceAsync();
+
+            // 2. Perform calibration with the measured data
             try
             {
                 BacklightCalibrator calibrator = new BacklightCalibrator();
-                CalibrationResult result = calibrator.PerformCalibration();
+                // Pass the measured data to the calibrator.
+                // If measuredLuminances is null (due to an error), the calibrator will use its default values.
+                CalibrationResult result = calibrator.PerformCalibration(measuredLuminances);
 
                 StringBuilder sb = new StringBuilder();
 
@@ -555,46 +564,12 @@ namespace WpfAppGui
 
         public void SendLcdFillCommand(string hexColor)
         {
-            try
-            {
-                lock (_dutLock)
-                {
-                    if (_dutPort != null && _dutPort.IsOpen)
-                    {
-                        _dutPort.WriteLine($"lcd fill {hexColor}");
-                    }
-                    else
-                    {
-                        ShowMessageBoxOnUi("DUT 未連接，無法發送指令。", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowMessageBoxOnUi($"發送 LCD Fill 指令時發生錯誤: {ex.Message}", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            SendDutCommand($"lcd fill {hexColor}");
         }
 
         public void SendBacklightBrightnessCommand(int brightness)
         {
-            try
-            {
-                lock (_dutLock)
-                {
-                    if (_dutPort != null && _dutPort.IsOpen)
-                    {
-                        _dutPort.WriteLine($"fct-bl set_brightness {brightness}");
-                    }
-                    else
-                    {
-                        ShowMessageBoxOnUi("DUT 未連接，無法發送指令。", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowMessageBoxOnUi($"發送 Backlight Brightness 指令時發生錯誤: {ex.Message}", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            SendDutCommand($"fct-bl set_brightness {brightness}");
         }
 
         /// <summary>
@@ -615,6 +590,74 @@ namespace WpfAppGui
 
             // For now, return a random value for simulation
             return _random.NextDouble() * 100.0;
+        }
+
+        private async Task<double[]> MeasureLuminanceAsync()
+        {
+            var colorimeterSettings = ReadComPortSettingsFromUI(CmbColorimeterPort, CmbColorimeterBaudRate, CmbColorimeterDataBits, CmbColorimeterParity, CmbColorimeterStopBits);
+            var dutSettings = ReadComPortSettingsFromUI(CmbDutPort, CmbDutBaudRate, CmbDutDataBits, CmbDutParity, CmbDutStopBits);
+
+            if (colorimeterSettings == null || dutSettings == null)
+            {
+                ShowMessageBoxOnUi("請選擇有效的 COM Port。", "設定錯誤", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
+
+            try
+            {
+                bool connected = await Task.Run(() => ConnectToColorimeter(colorimeterSettings) && ConnectToDut(dutSettings));
+                if (!connected)
+                {
+                    ShowMessageBoxOnUi("無法連線到 COM Port，請檢查設定。", "連線失敗", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return null;
+                }
+
+                double[] pwm_inputs = { 0, 10, 25, 50, 75, 85, 95, 97, 98, 100 };
+                var measuredLuminances = new List<double>();
+
+                foreach (var pwm in pwm_inputs)
+                {
+                    SendDutCommand($"fct-bl set_current_percent {pwm}");
+                    // Add a small delay for the hardware to respond
+                    await Task.Delay(100);
+                    double luminance = ReadLuminanceFromColorimeter();
+                    measuredLuminances.Add(luminance);
+                }
+
+                return measuredLuminances.ToArray();
+            }
+            catch (Exception ex)
+            {
+                ShowMessageBoxOnUi($"執行亮度測量時發生錯誤: {ex.Message}", "測量失敗", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
+            finally
+            {
+                DisconnectFromColorimeter();
+                DisconnectFromDut();
+            }
+        }
+
+        public void SendDutCommand(string command)
+        {
+            try
+            {
+                lock (_dutLock)
+                {
+                    if (_dutPort != null && _dutPort.IsOpen)
+                    {
+                        _dutPort.WriteLine(command);
+                    }
+                    else
+                    {
+                        ShowMessageBoxOnUi("DUT 未連接，無法發送指令。", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowMessageBoxOnUi($"發送 DUT 指令 '{command}' 時發生錯誤: {ex.Message}", "指令失敗", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

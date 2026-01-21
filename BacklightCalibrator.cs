@@ -42,12 +42,22 @@ namespace WpfAppGui
             return parameters[0] * Math.Exp(parameters[1] * x);
         }
 
-        public CalibrationResult PerformCalibration()
+        public CalibrationResult PerformCalibration(double[] measuredLuminances = null)
         {
             double[] pwm_inputs = { 0, 10, 25, 50, 75, 85, 95, 97, 98, 100 };
-            double[] measured_luminances = { 1, 1, 1, 3, 18, 37, 75, 87, 93, 107 };
+            double[] final_luminances;
 
-            var dataPoints = pwm_inputs.Zip(measured_luminances, (x, y) => new { Pwm = x, Lum = y })
+            if (measuredLuminances != null && measuredLuminances.Length == pwm_inputs.Length)
+            {
+                final_luminances = measuredLuminances;
+            }
+            else
+            {
+                // Fallback to default values
+                final_luminances = new double[] { 1, 1, 1, 3, 18, 37, 75, 87, 93, 107 };
+            }
+
+            var dataPoints = pwm_inputs.Zip(final_luminances, (x, y) => new { Pwm = x, Lum = y })
                                        .Where(p => p.Lum > 0.001)
                                        .ToList();
 
@@ -65,17 +75,9 @@ namespace WpfAppGui
             var minimizer = new LevenbergMarquardtMinimizer(maximumIterations: 5000);
             var result = minimizer.FindMinimum(objective, initialGuess);
 
-            bool isOk =
-            result.ReasonForExit.HasFlag(ExitCondition.Converged) ||
-            result.ReasonForExit.HasFlag(ExitCondition.RelativePoints);
-
-            if (!isOk)
+            if (!result.ReasonForExit.HasFlag(ExitCondition.Converged))
             {
-                return new CalibrationResult
-                {
-                    IsSuccess = false,
-                    ErrorMessage = $"擬合失敗: {result.ReasonForExit}"
-                };
+                 return new CalibrationResult { IsSuccess = false, ErrorMessage = $"非線性擬合演算法未收斂: {result.ReasonForExit}" };
             }
 
             double a_coeff = result.MinimizingPoint[0];
