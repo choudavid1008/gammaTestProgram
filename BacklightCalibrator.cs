@@ -95,7 +95,7 @@ namespace WpfAppGui
                 predictionTable.Add(new Tuple<double, double>(pwm, predictedValue));
             }
 
-            double measured_max = measured_luminances.Last();
+            double measured_max = final_luminances.Last();
             double predicted_max = Predict(finalParameters, 100);
 
             return new CalibrationResult
